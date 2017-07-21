@@ -1802,6 +1802,12 @@ phase6_unget (token_ty *tp)
 static bool
 is_inttypes_macro (const char *name)
 {
+  /* PRItime is a maro for timestamp_t in git.git. */
+  if (!strncmp(name, "PRItime", 7))
+    {
+      return true;
+    }
+
   /* Syntax:
      P R I { d | i | o | u | x | X }
      { { | LEAST | FAST } { 8 | 16 | 32 | 64 } | MAX | PTR }  */
@@ -1843,8 +1849,17 @@ phase8a_get (token_ty *tp)
   phase6_get (tp);
   if (tp->type == token_type_name && is_inttypes_macro (tp->string))
     {
+      char *new_string;
       /* Turn PRIdXXX into "<PRIdXXX>".  */
-      char *new_string = xasprintf ("<%s>", tp->string);
+      if (!strncmp(tp->string, "PRItime", 7))
+        {
+          /* Replace PRItime with PRIuMAX for git.git project */
+          new_string = xasprintf ("<%s>", "PRIuMAX");
+        }
+      else
+        {
+          new_string = xasprintf ("<%s>", tp->string);
+        }
       free (tp->string);
       tp->string = new_string;
       tp->comment = add_reference (savable_comment);
